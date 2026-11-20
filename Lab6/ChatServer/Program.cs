@@ -15,6 +15,11 @@ int port = args.Length > 0 && int.TryParse(args[0], out int p) ? p : 5555;
 var clients = new List<ClientInfo>();
 var lockObj = new object();
 
+// БОНУС: история чата — последние 10 обычных сообщений.
+// Новому клиенту при подключении они отправляются первыми.
+var history = new Queue<string>();
+const int HistorySize = 10;
+
 // Журнал сервера: вывод на экран + дозапись в chat.log (лабораторная 3).
 void Log(string text)
 {
@@ -25,8 +30,19 @@ void Log(string text)
 }
 
 // Рассылка сообщения всем подключённым клиентам.
-async Task BroadcastAsync(string message)
+// toHistory=true — сообщение ещё и запоминается в историю (бонус).
+async Task BroadcastAsync(string message, bool toHistory = false)
 {
+    if (toHistory)
+    {
+        lock (lockObj)
+        {
+            history.Enqueue(message);
+            while (history.Count > HistorySize)
+                history.Dequeue();
+        }
+    }
+
     List<StreamWriter> snapshot;
     lock (lockObj)
         snapshot = clients.Select(c => c.Writer).ToList();  // копия под замком
@@ -73,6 +89,18 @@ async Task HandleClientAsync(TcpClient client)
         me = new ClientInfo { Nick = nick, Writer = writer };
         lock (lockObj) clients.Add(me);
         await writer.WriteLineAsync("NICK_OK");
+
+        // БОНУС: новому клиенту — последние сообщения истории,
+        // чтобы он видел, о чём шла речь до его входа.
+        List<string> recent;
+        lock (lockObj) recent = history.ToList();
+        if (recent.Count > 0)
+        {
+            await writer.WriteLineAsync("--- последние сообщения ---");
+            foreach (string m in recent)
+                await writer.WriteLineAsync(m);
+            await writer.WriteLineAsync("--- конец истории ---");
+        }
 
         Log($"{nick} подключился ({endpoint})");
         await BroadcastAsync($"*** {nick} вошёл в чат ***");
@@ -124,9 +152,9 @@ async Task HandleClientAsync(TcpClient client)
                 continue;
             }
 
-            // обычное сообщение — всем
+            // обычное сообщение — всем и в историю
             Log($"{nick}: {line}");
-            await BroadcastAsync($"[{DateTime.Now:HH:mm:ss}] {nick}: {line}");
+            await BroadcastAsync($"[{DateTime.Now:HH:mm:ss}] {nick}: {line}", toHistory: true);
         }
     }
     catch (IOException)
