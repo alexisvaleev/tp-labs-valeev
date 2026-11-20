@@ -25,10 +25,11 @@ Console.WriteLine($"Уникальных покупателей: {unique.Count} 
 
 // --- 3. Текстовый отчёт ---
 sw.Restart();
-string report = "";
+// StringBuilder вместо +=: строка не пересоздаётся на каждой итерации
+var report = new StringBuilder();
 for (int i = 0; i < buyers.Count; i++)
 {
-    report += buyers[i] + ";" + amounts[i] + Environment.NewLine;
+    report.Append(buyers[i]).Append(';').Append(amounts[i]).Append(Environment.NewLine);
 }
 Console.WriteLine($"Отчёт: {report.Length} символов  ({sw.ElapsedMilliseconds} мс)");
 
