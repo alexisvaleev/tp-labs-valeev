@@ -17,12 +17,10 @@ for (int i = 0; i < N; i++)
 
 // --- 2. Список уникальных покупателей ---
 var sw = Stopwatch.StartNew();
-var unique = new List<string>();
-for (int i = 0; i < buyers.Count; i++)
-{
-    if (!unique.Contains(buyers[i]))
-        unique.Add(buyers[i]);
-}
+// HashSet вместо List.Contains: поиск O(1) вместо O(n)
+var unique = new HashSet<string>();
+foreach (string b in buyers)
+    unique.Add(b);
 Console.WriteLine($"Уникальных покупателей: {unique.Count}  ({sw.ElapsedMilliseconds} мс)");
 
 // --- 3. Текстовый отчёт ---
