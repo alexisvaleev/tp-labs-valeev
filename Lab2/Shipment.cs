@@ -3,7 +3,9 @@ namespace Lab2;
 // Абстрактный базовый класс отправления службы доставки (вариант 9).
 // Создать «просто отправление» нельзя — только конкретный тип:
 // письмо, посылку или крупногабаритный груз.
-public abstract class Shipment
+// БОНУС: IComparable<Shipment> — отправления можно сортировать list.Sort()
+// по стоимости без всяких компараторов.
+public abstract class Shipment : IComparable<Shipment>
 {
     // Свойства только для чтения: менять их после создания нельзя,
     // состояние объекта защищено проверками в конструкторе.
@@ -35,6 +37,10 @@ public abstract class Shipment
     // Срок доставки в днях: базовое правило — срочная 2 дня, обычная 6.
     // Виртуальный: наследник может переопределить, если у него другие сроки.
     public virtual int DeliveryDays() => IsExpress ? 2 : 6;
+
+    // БОНУС: сравнение для сортировки — по возрастанию стоимости.
+    public int CompareTo(Shipment? other)
+        => other is null ? 1 : Cost().CompareTo(other.Cost());
 
     public override string ToString()
         => $"{GetType().Name,-8} {TrackingNumber,-6} -> {Destination,-15} | {WeightKg,6:F1} кг | {Cost(),10:F2} руб. | {DeliveryDays(),2} дн. | {(IsExpress ? "срочная" : "обычная")}";
