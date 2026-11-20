@@ -35,11 +35,9 @@ Console.WriteLine($"Отчёт: {report.Length} символов  ({sw.ElapsedMi
 
 // --- 4. Сортировка сумм ---
 sw.Restart();
+// встроенная сортировка O(n log n) вместо пузырька O(n²)
 var sorted = new List<int>(amounts);
-for (int i = 0; i < sorted.Count - 1; i++)
-    for (int j = 0; j < sorted.Count - i - 1; j++)
-        if (sorted[j] > sorted[j + 1])
-            (sorted[j], sorted[j + 1]) = (sorted[j + 1], sorted[j]);
+sorted.Sort();
 Console.WriteLine($"Медианная сумма: {sorted[sorted.Count / 2]}  ({sw.ElapsedMilliseconds} мс)");
 
 // --- 5. Сумма покупок каждого покупателя ---
