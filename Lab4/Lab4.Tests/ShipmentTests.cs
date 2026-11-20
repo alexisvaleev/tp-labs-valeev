@@ -137,6 +137,35 @@ public class ShipmentTests
     }
 
     [Fact]
+    public void DeliveryService_AverageWeight_OfTwoIsMean()
+    {
+        var service = new DeliveryService();
+        service.Add(new Letter("L-10", "М", 0.2, false));
+        service.Add(new Parcel("P-7", "К", 1.8, false, false));
+        Assert.Equal(1.0, service.AverageWeight(), 1e-9);
+    }
+
+    [Fact]
+    public void DeliveryService_GroupByType_GroupsByClassName()
+    {
+        var service = new DeliveryService();
+        service.Add(new Letter("L-11", "М", 0.2, false));
+        service.Add(new Letter("L-12", "М", 0.3, true));
+        service.Add(new Freight("F-7", "Т", 50, false, 1, 1, 1));
+
+        var groups = service.GroupByType().ToDictionary(g => g.Key, g => g.Count());
+
+        Assert.Equal(2, groups["Letter"]);
+        Assert.Equal(1, groups["Freight"]);
+    }
+
+    [Fact]
+    public void DeliveryService_Add_Null_Throws()
+    {
+        Assert.Throws<ArgumentNullException>(() => new DeliveryService().Add(null!));
+    }
+
+    [Fact]
     public void Freight_ToString_ContainsDimensions()
     {
         var freight = new Freight("F-6", "Тула", 50, false, 2, 1, 0.5);
