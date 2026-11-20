@@ -10,6 +10,12 @@ public static class MathAlgorithms
     // переполнения нет, поэтому верхней границы 20 нет.
     public static BigInteger Factorial(int n)
     {
+        // В лабораторной 1 проверка n < 0 стояла в консольной обёртке,
+        // и метод при отрицательном n молча возвращал 1. Тест поймал это —
+        // валидация перенесена сюда, в сам метод.
+        if (n < 0)
+            throw new ArgumentOutOfRangeException(nameof(n), "n должно быть неотрицательным.");
+
         BigInteger result = 1;
         for (int i = 2; i <= n; i++)
             result *= i;
