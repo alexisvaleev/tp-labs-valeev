@@ -2,12 +2,13 @@
 // Консольное приложение с меню из четырёх заданий.
 // Вся логика — в отдельных методах, консоль — только ввод/вывод.
 using System.Globalization;
+using System.Numerics;
 
 while (true)
 {
     Console.WriteLine();
     Console.WriteLine("=== Лабораторная 1. Вариант 9 ===");
-    Console.WriteLine("1 — факториал числа n");
+    Console.WriteLine("1 — факториал числа n (BigInteger, бонус)");
     Console.WriteLine("2 — числа Фибоначчи от 0 до n");
     Console.WriteLine("3 — функция A = sin(19/(x-5)) * ch(e^x + e^(4x))");
     Console.WriteLine("4 — сумма ряда ln(1+x) с точностью 1e-6");
@@ -63,19 +64,21 @@ static double ReadDouble(string prompt)
 
 static void TaskFactorial()
 {
-    int n = ReadInt("Введите n (0..20): ");
-    if (n < 0 || n > 20)
+    int n = ReadInt("Введите n (0..1000): ");
+    if (n < 0 || n > 1000)
     {
-        Console.WriteLine("Ошибка: нужно целое от 0 до 20 (21! не помещается в long).");
+        Console.WriteLine("Ошибка: нужно целое от 0 до 1000.");
         return;
     }
     Console.WriteLine($"{n}! = {Factorial(n)}");
 }
 
-// Факториал итеративно. Ограничение n <= 20: 21! уже не помещается в long.
-static long Factorial(int n)
+// БОНУС: факториал через BigInteger — переполнения нет вовсе,
+// поэтому ограничение n <= 20 снято. Граница 1000 чисто практическая:
+// иначе в консоль выведется число на десятки тысяч знаков.
+static BigInteger Factorial(int n)
 {
-    long result = 1;
+    BigInteger result = 1;
     for (int i = 2; i <= n; i++)
         result *= i;
     return result;
@@ -159,20 +162,21 @@ static void TaskLnSeries()
 
 // Вариант 9: ln(1+x) = x - x^2/2 + x^3/3 - ... , для -1 < x <= 1.
 // Суммируем, пока очередной член по модулю больше eps.
-// Общий член ряда: t_k = (-1)^(k+1) * x^k / k.
+//
+// БОНУС: члены считаются рекуррентно — каждый следующий из предыдущего:
+//   t_k = (-1)^(k+1) * x^k / k  =>  t_{k+1} = t_k * (-x) * k / (k+1), t_1 = x.
+// Это быстрее (не зовём Math.Pow на каждой итерации) и точнее
+// (не копятся ошибки округления от возведения в степень).
 static (double Sum, int Terms) LnSeries(double x, double eps)
 {
+    double term = x;   // t_1
     double sum = 0;
     int k = 0;
-    while (true)
+    while (Math.Abs(term) > eps)
     {
-        k++;
-        double term = Math.Pow(x, k) / k;
-        if (k % 2 == 0)
-            term = -term;
-        if (Math.Abs(term) <= eps)
-            break;
         sum += term;
+        k++;
+        term *= -x * k / (k + 1.0);   // t_{k+1} из t_k
     }
-    return (sum, k - 1);
+    return (sum, k);
 }
