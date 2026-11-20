@@ -1,0 +1,5 @@
+<Solution>
+  <Project Path="Cipher.App/Cipher.App.csproj" />
+  <Project Path="Cipher.Core/Cipher.Core.csproj" />
+  <Project Path="Cipher.Tests/Cipher.Tests.csproj" />
+</Solution>
