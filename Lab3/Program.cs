@@ -20,7 +20,7 @@ while (true)
 
     switch (choice)
     {
-        case "1": TaskBuildTree(); break;
+        case "1": await TaskBuildTreeAsync(); break;
         case "0": case null: return;
         default:
             Console.WriteLine("Нет такого пункта. Введите 0 или 1.");
@@ -30,7 +30,7 @@ while (true)
 
 // ------------------- обработка пункта меню -------------------
 
-static void TaskBuildTree()
+static async Task TaskBuildTreeAsync()
 {
     Console.Write("Путь к папке: ");
     string? folder = Console.ReadLine();
@@ -58,7 +58,7 @@ static void TaskBuildTree()
 
     try
     {
-        int lines = BuildTree(folder, depth, outFile);
+        int lines = await BuildTreeAsync(folder, depth, outFile);
         Console.WriteLine($"Готово: записано {lines} строк в файл \"{outFile}\".");
     }
     catch (UnauthorizedAccessException)
@@ -73,24 +73,26 @@ static void TaskBuildTree()
 
 // ------------------------- логика -------------------------
 
-// Строит дерево папки folder глубиной maxDepth (0 = без ограничения)
-// и пишет его в файл outFile. Возвращает число записанных строк.
-static int BuildTree(string folder, int maxDepth, string outFile)
+// БОНУС: запись дерева сделана асинхронной (WriteLineAsync).
+// Поток не стоит заблокированным, пока диск пишет данные —
+// для консольного приложения выгоды мало, но в оконном/серверном
+// приложении это не дало бы «замерзнуть» интерфейсу или очереди запросов.
+static async Task<int> BuildTreeAsync(string folder, int maxDepth, string outFile)
 {
     int lines = 0;
 
     using var writer = new StreamWriter(outFile, false, Encoding.UTF8);
-    writer.WriteLine(new DirectoryInfo(folder).Name + Path.DirectorySeparatorChar);
+    await writer.WriteLineAsync(new DirectoryInfo(folder).Name + Path.DirectorySeparatorChar);
     lines++;
 
-    lines += WriteLevel(folder, prefix: "", depthLeft: maxDepth, writer);
+    lines += await WriteLevelAsync(folder, prefix: "", depthLeft: maxDepth, writer);
     return lines;
 }
 
 // Рекурсивно пишет содержимое одной папки.
 // prefix — «отступ» из вертикальных линий для текущего уровня.
 // Возвращает число записанных строк.
-static int WriteLevel(string folder, string prefix, int depthLeft, StreamWriter writer)
+static async Task<int> WriteLevelAsync(string folder, string prefix, int depthLeft, StreamWriter writer)
 {
     int lines = 0;
 
@@ -109,7 +111,7 @@ static int WriteLevel(string folder, string prefix, int depthLeft, StreamWriter 
     }
     catch (UnauthorizedAccessException)
     {
-        writer.WriteLine(prefix + "└── [нет доступа]");
+        await writer.WriteLineAsync(prefix + "└── [нет доступа]");
         return 1;
     }
 
@@ -125,20 +127,20 @@ static int WriteLevel(string folder, string prefix, int depthLeft, StreamWriter 
 
         if (Directory.Exists(path))
         {
-            writer.WriteLine(prefix + branch + Path.GetFileName(path) + Path.DirectorySeparatorChar);
+            await writer.WriteLineAsync(prefix + branch + Path.GetFileName(path) + Path.DirectorySeparatorChar);
             lines++;
 
             if (unlimited || depthLeft > 1)
             {
                 string childPrefix = prefix + (isLast ? "    " : "│   ");
                 int nextDepth = unlimited ? 0 : depthLeft - 1;
-                lines += WriteLevel(path, childPrefix, nextDepth, writer);
+                lines += await WriteLevelAsync(path, childPrefix, nextDepth, writer);
             }
         }
         else
         {
             var info = new FileInfo(path);
-            writer.WriteLine(prefix + branch + info.Name + $"  ({FormatSize(info.Length)})");
+            await writer.WriteLineAsync(prefix + branch + info.Name + $"  ({FormatSize(info.Length)})");
             lines++;
         }
     }
